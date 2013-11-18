@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="game">
+      <UniqueIdentifier>{7692462c-89ee-4b94-894f-e12b695118ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="util">
+      <UniqueIdentifier>{6761122a-a8a3-4d93-b24b-0050f6619558}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="main">
+      <UniqueIdentifier>{7be1aaf1-7cf9-4873-a3c0-d44154d68c42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="search">
+      <UniqueIdentifier>{4b548a82-17c6-44b6-a651-f1a9e20e71c1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\source\SearchResults.hpp">
+      <Filter>search</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\Common.h">
+      <Filter>game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\Move.hpp">
+      <Filter>game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\Position.hpp">
+      <Filter>game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\Unit.hpp">
+      <Filter>game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\Array.hpp">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\MoveArray.hpp">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\AlphaBeta.h">
+      <Filter>search</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\Hash.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\Player.h">
+      <Filter>game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\GameState.h">
+      <Filter>game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\Game.h">
+      <Filter>game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\MicroSearchParameters.h">
+      <Filter>search</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\Timer.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\TranspositionTable.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\BaseTypes.hpp">
+      <Filter>game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\Map.hpp">
+      <Filter>game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\Display.h">
+      <Filter>util</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\source\AlphaBeta.cpp">
+      <Filter>search</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\Common.cpp">
+      <Filter>game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\Hash.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\Player.cpp">
+      <Filter>game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\GameState.cpp">
+      <Filter>game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\Game.cpp">
+      <Filter>game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\MicroSearchParameters.cpp">
+      <Filter>search</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\Timer.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\TranspositionTable.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\test.cpp">
+      <Filter>main</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\Display.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

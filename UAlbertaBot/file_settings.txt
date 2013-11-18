@@ -1,0 +1,2 @@
+bwapi-data/read/
+bwapi-data/write/
