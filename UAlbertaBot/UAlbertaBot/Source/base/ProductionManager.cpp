@@ -38,10 +38,31 @@ void ProductionManager::setBuildOrder(const std::vector<MetaType> & buildOrder)
 
 void ProductionManager::performBuildOrderSearch(const std::vector< std::pair<MetaType, UnitCountType> > & goal)
 {	
-	std::vector<MetaType> buildOrder = StarcraftBuildOrderSearchManager::Instance().findBuildOrder(goal);
+	/*
+	if (selfRace == BWAPI::Races::Zerg) {
+		performZergBuildOrderSearch(goal);
+	}
+	else {
+	*/
+		std::vector<MetaType> buildOrder = StarcraftBuildOrderSearchManager::Instance().findBuildOrder(goal);
 
-	// set the build order
-	setBuildOrder(buildOrder);
+		// set the build order
+		setBuildOrder(buildOrder);
+	//}
+}
+
+void ProductionManager::performZergBuildOrderSearch(const std::vector< std::pair<MetaType, UnitCountType> > & goal)
+{
+	static ZergBuildOrderSearch zerg_build_order_search;
+
+	BOOST_FOREACH (MetaPair order, goal) {
+
+		if (order.first.isUnit()) {
+
+			std::vector<MetaType> unit_dependancies = zerg_build_order_search.getDependancies(order.first.unitType);
+
+		}
+	}
 }
 
 void ProductionManager::update() 
@@ -54,6 +75,7 @@ void ProductionManager::update()
 	{
 		BWAPI::Broodwar->drawTextScreen(150, 10, "Nothing left to build, new search!");
 		const std::vector< std::pair<MetaType, UnitCountType> > newGoal = StrategyManager::Instance().getBuildOrderGoal();
+		
 		performBuildOrderSearch(newGoal);
 	}
 
@@ -511,3 +533,65 @@ ProductionManager & ProductionManager::Instance() {
 	static ProductionManager instance;
 	return instance;
 }
+
+
+ZergBuildOrderSearch::ZergBuildOrderSearch()
+{
+	// Unit Maps
+	static const MetaType map_zerg_zergling(BWAPI::UnitTypes::Zerg_Zergling);
+	static const MetaType map_zerg_spawning_pool(BWAPI::UnitTypes::Zerg_Spawning_Pool);
+	static const MetaType map_zerg_larva(BWAPI::UnitTypes::Zerg_Larva);
+	static const MetaType map_zerg_drone(BWAPI::UnitTypes::Zerg_Drone);
+	static const MetaType map_zerg_hatchery(BWAPI::UnitTypes::Zerg_Hatchery);
+
+	// Zergling
+	ZergBuildOrder zerg_zergling(map_zerg_zergling);
+
+	zerg_zergling.dependencies.push_back(map_zerg_spawning_pool);
+	zerg_zergling.dependencies.push_back(map_zerg_larva);
+
+	build_order.push_back(zerg_zergling);
+
+	// Spawning Pool
+	ZergBuildOrder zerg_spawning_pool(map_zerg_spawning_pool);
+
+	zerg_spawning_pool.dependencies.push_back(map_zerg_drone);
+
+	build_order.push_back(zerg_spawning_pool);
+
+	// Drone
+	ZergBuildOrder zerg_drone(map_zerg_drone);
+
+	zerg_drone.dependencies.push_back(map_zerg_larva);
+	zerg_drone.dependencies.push_back(map_zerg_hatchery);
+
+	build_order.push_back(zerg_drone);
+}
+
+std::vector<MetaType> ZergBuildOrderSearch::getDependancies(const MetaType & unit)
+{
+	std::vector<ZergBuildOrder>::iterator unit_order = std::find(build_order.begin(), build_order.end(), unit);
+
+	std::vector<MetaType> dependencies;
+
+	// Check if we found a result
+	if (unit_order != build_order.end()) {
+
+		BOOST_FOREACH(MetaType unit_dependancy, unit_order->dependencies) {
+
+			std::vector<MetaType> unit_dependancies = getDependancies(unit_dependancy);
+
+			BOOST_FOREACH(MetaType sub_unit_dependancy, unit_dependancies) {
+				dependencies.push_back(sub_unit_dependancy);
+			}
+
+			dependencies.push_back(unit_dependancy);
+
+		}
+
+	}
+
+	return dependencies;
+}
+
+

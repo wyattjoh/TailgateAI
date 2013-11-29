@@ -52,6 +52,7 @@ class ProductionManager
 	BWAPI::UnitType				getProducer(MetaType t);
 
 	void						performBuildOrderSearch(const std::vector< std::pair<MetaType, UnitCountType> > & goal);
+	void						performZergBuildOrderSearch(const std::vector< std::pair<MetaType, UnitCountType> > & goal);
 	void						setBuildOrder(const std::vector<MetaType> & buildOrder);
 	void						createMetaType(BWAPI::Unit * producer, MetaType type);
 	BWAPI::Unit *				selectUnitOfType(BWAPI::UnitType type, bool leastTrainingTimeRemaining = true, BWAPI::Position closestTo = BWAPI::Position(0,0));
@@ -79,4 +80,27 @@ public:
 	void						onSendText(std::string text);
 
 	void						drawProductionInformation(int x, int y);
+};
+
+struct ZergBuildOrder
+{
+	MetaType parent;
+	std::vector<MetaType> dependencies;
+
+	ZergBuildOrder(MetaType parent_) : parent(parent_) {}
+
+	bool operator==(const ZergBuildOrder & rhs) {
+		return parent == rhs.parent;
+	}
+};
+
+class ZergBuildOrderSearch
+{
+private:
+	std::vector<ZergBuildOrder> build_order;
+
+
+public:
+	ZergBuildOrderSearch();
+	std::vector<MetaType> getDependancies(const MetaType & unit);
 };
