@@ -76,4 +76,27 @@ struct MetaType {
 			return "LOL";	
 		}
 	}
+
+	bool operator==(const MetaType & rhs) {
+		if (type == rhs.type) {
+			if (isUnit())
+			{
+				return unitType == rhs.unitType;
+			}
+			else if (isTech())
+			{
+				return techType == rhs.techType;
+			}
+			else if (isUpgrade())
+			{
+				return upgradeType == rhs.upgradeType;
+			}
+			else if (isCommand())
+			{
+				return commandType == rhs.commandType;
+			}
+		}
+		else
+			return false;
+	}
 };
