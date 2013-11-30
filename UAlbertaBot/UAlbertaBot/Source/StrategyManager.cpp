@@ -673,8 +673,12 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 	else
 		dronesPERhatchery = dronesPERhatcheryWanted;
 
-	if (frame_count > 7000)
+	if (frame_count > 7000) {
 		hydrasWanted = 2;
+		//Upgrades hydralisks
+		//if(numHydras > 3)
+			//goal.push_back(MetaPair(BWAPI::UpgradeTypes::Grooved_Spines, 1));
+	}
 
 	if (frame_count > 10000) {
 		lingsWanted = 2;
