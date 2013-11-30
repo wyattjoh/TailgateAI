@@ -6,3 +6,12 @@ UAlbertaBot/AdversarialSearch/VisualStudio/Release
 UAlbertaBot/AdversarialSearch/VisualStudio/Debug
 UAlbertaBot/UAlbertaBot/VisualStudio/UAlbertaBot.sdf
 UAlbertaBot/UAlbertaBot/VisualStudio/UAlbertaBot.opensdf
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.pdf
+.DS_Store

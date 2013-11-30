@@ -30,8 +30,8 @@ void StrategyManager::addStrategies()
 	protossOpeningBook[ProtossDragoons]			= "0 0 0 0 1 0 0 3 0 7 0 0 5 0 0 3 8 6 1 6 6 0 3 1 0 6 6 6";
 	terranOpeningBook[TerranMarineRush]			= "0 0 0 0 0 1 0 0 3 0 0 3 0 1 0 4 0 0 0 6";
 	zergOpeningBook[ZergNinePoolZerglingRush]	= "0 0 0 0 0 3 1 4 4 4 4 4 4 1 5 0 0 0 1 4 4 6";
-	zergOpeningBook[ZergFivePoolZerglingRush]	= "0 3 4 4 4 4 4 1 4 0 0 0 1 5 4 4 0 0 0 6";
-	zergOpeningBook[ZergFourPoolZerglingRush]	= "3 4 4 4 4 4 4 1 0 0 0 0 5 0 4 4 0 0 0 6";
+	zergOpeningBook[ZergFivePoolZerglingRush]	= "0 3 4 4 4 4 4 1 4 0 0 0 1 5 4 4 0 0 6";
+	zergOpeningBook[ZergFourPoolZerglingRush]	= "3 4 4 4 4 4 4 1 4 0 0 0 1 5 4 4 0 0 6";
 	zergOpeningBook[ZergStandardStrategy]		= "0 0 0 0 0 1 0 0 0 2 3 5 0 0 0 0 0 0 1 6";
 
 
@@ -700,7 +700,7 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 		last_frame_since_muta = frame_count;
 	}
 
-	if (frame_count > 5000 && dronesPERhatchery < dronesPERhatcheryWanted) {
+	if (frame_count > 3000 && dronesPERhatchery < dronesPERhatcheryWanted) {
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Drone, 2));
 		BWAPI::Broodwar->printf("Zerg Drone Ordered.");
 		BWAPI::Broodwar->printf("Zerg Drone Ordered.");
