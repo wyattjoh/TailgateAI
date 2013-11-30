@@ -86,6 +86,7 @@ struct ZergBuildOrder
 {
 	MetaType parent;
 	std::vector<MetaType> dependencies;
+	std::vector<MetaType> prebuildrequirements;
 
 	ZergBuildOrder(MetaType parent_) : parent(parent_) {}
 
@@ -103,4 +104,5 @@ private:
 public:
 	ZergBuildOrderSearch();
 	std::vector<MetaType> getDependancies(const MetaType & unit);
+	std::vector<MetaType> getPreBuildRequirements(const MetaType & unit);
 };

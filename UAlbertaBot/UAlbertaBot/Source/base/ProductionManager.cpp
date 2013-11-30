@@ -9,6 +9,8 @@
 
 #define GOAL_ADD(G, M, N) G.push_back(std::pair<MetaType, int>(M, N))
 
+static ZergBuildOrderSearch zerg_build_order_search;
+
 ProductionManager::ProductionManager() 
 	: initialBuildSet(false)
 	, reservedMinerals(0)
@@ -53,8 +55,6 @@ void ProductionManager::performBuildOrderSearch(const std::vector< std::pair<Met
 
 void ProductionManager::performZergBuildOrderSearch(const std::vector< std::pair<MetaType, UnitCountType> > & goal)
 {
-	static ZergBuildOrderSearch zerg_build_order_search;
-
 	// clear the current build order
 	queue.clearAll();
 
@@ -63,8 +63,17 @@ void ProductionManager::performZergBuildOrderSearch(const std::vector< std::pair
 		if (order.first.isUnit() || order.first.isBuilding()) {
 
 			std::vector<MetaType> unit_dependancies = zerg_build_order_search.getDependancies(order.first.unitType);
+			std::vector<MetaType> unit_prebuildrequirements = zerg_build_order_search.getPreBuildRequirements(order.first.unitType);
 
-			BWAPI::Broodwar->printf("ZERGSEARCH: %s unit requested, takes %d dependencies.", order.first.getName().c_str(), unit_dependancies.size());
+			if (unit_prebuildrequirements.size() > 0) {
+				BOOST_FOREACH (MetaType unit_prebuildrequirement, unit_prebuildrequirements) {
+					queue.queueAsLowestPriority(unit_prebuildrequirement, true);
+					BWAPI::Broodwar->printf("ZERGSEARCH: Building prebuildreq: %s unit for %s.", unit_prebuildrequirement.getName().c_str(), order.first.getName().c_str());
+				}
+			}
+			else
+				BWAPI::Broodwar->printf("ZERGSEARCH: No prebuildreq for %s.", order.first.getName().c_str());
+			// BWAPI::Broodwar->printf("ZERGSEARCH: %s unit requested, takes %d dependencies.", order.first.getName().c_str(), unit_dependancies.size());
 
 			BOOST_FOREACH (MetaType unit_dependancy, unit_dependancies) {
 				if (unit_dependancy.isUnit() || unit_dependancy.isBuilding()) {
@@ -73,11 +82,11 @@ void ProductionManager::performZergBuildOrderSearch(const std::vector< std::pair
 						queue.queueAsLowestPriority(unit_dependancy.unitType, true);
 					}
 					else {
-						BWAPI::Broodwar->printf("ZERGSEARCH: %s is either completed already or is already being built.", unit_dependancy.unitType.getName().c_str());
+						// BWAPI::Broodwar->printf("ZERGSEARCH: %s is either completed already or is already being built.", unit_dependancy.unitType.getName().c_str());
 					}
 				}
 				else {
-					BWAPI::Broodwar->printf("ZERGSEARCH: %s is not a unit or a building.", unit_dependancy.unitType.getName().c_str());
+					// BWAPI::Broodwar->printf("ZERGSEARCH: %s is not a unit or a building.", unit_dependancy.unitType.getName().c_str());
 				}
 			}
 
@@ -586,14 +595,14 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	// Zerg Sunken Colony
 	ZergBuildOrder zerg_sunken_colony(map_zerg_sunken_colony);
 
-	zerg_sunken_colony.dependencies.push_back(map_zerg_creep_colony);
+	zerg_sunken_colony.prebuildrequirements.push_back(map_zerg_creep_colony);
 
 	build_order.push_back(zerg_sunken_colony);
 
 	// Zerg Creep Colony
 	ZergBuildOrder zerg_creep_colony(map_zerg_creep_colony);
 
-	zerg_creep_colony.dependencies.push_back(map_zerg_drone);
+	zerg_creep_colony.prebuildrequirements.push_back(map_zerg_drone);
 
 	build_order.push_back(zerg_creep_colony);
 
@@ -608,7 +617,7 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	ZergBuildOrder zerg_spire(map_zerg_spire);
 
 	zerg_spire.dependencies.push_back(map_zerg_lair);
-	zerg_spire.dependencies.push_back(map_zerg_drone);
+	zerg_spire.prebuildrequirements.push_back(map_zerg_drone);
 
 	build_order.push_back(zerg_spire);
 
@@ -630,6 +639,7 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	ZergBuildOrder zerg_hydralisk_den(map_zerg_hydralisk_den);
 
 	zerg_hydralisk_den.dependencies.push_back(map_zerg_spawning_pool);
+	zerg_hydralisk_den.prebuildrequirements.push_back(map_zerg_drone);
 
 	build_order.push_back(zerg_hydralisk_den);
 
@@ -644,7 +654,7 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	// Zerg Spawning Pool
 	ZergBuildOrder zerg_spawning_pool(map_zerg_spawning_pool);
 
-	zerg_spawning_pool.dependencies.push_back(map_zerg_drone);
+	zerg_spawning_pool.prebuildrequirements.push_back(map_zerg_drone);
 
 	build_order.push_back(zerg_spawning_pool);
 
@@ -683,4 +693,26 @@ std::vector<MetaType> ZergBuildOrderSearch::getDependancies(const MetaType & uni
 	return dependencies;
 }
 
+std::vector<MetaType> ZergBuildOrderSearch::getPreBuildRequirements(const MetaType & unit)
+{
+	std::vector<ZergBuildOrder>::iterator unit_order = std::find(build_order.begin(), build_order.end(), unit);
 
+	std::vector<MetaType> prebuildrequirements;
+
+	if (unit_order != build_order.end()) {
+		BWAPI::Broodwar->printf("ZERGSEARCH: <><> PREREQ INIT <><>");
+		BOOST_FOREACH(MetaType prebuildrequirement, unit_order->prebuildrequirements) {
+
+			std::vector<MetaType> prebuildrequirements_sub = getPreBuildRequirements(prebuildrequirement);
+
+			BOOST_FOREACH(MetaType prebuildrequirement_sub, prebuildrequirements_sub) {
+				prebuildrequirements.push_back(prebuildrequirement_sub);
+			}
+
+			prebuildrequirements.push_back(prebuildrequirement);
+
+		}
+	}
+
+	return prebuildrequirements;
+}
