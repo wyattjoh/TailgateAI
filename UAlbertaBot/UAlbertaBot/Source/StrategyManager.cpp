@@ -661,8 +661,10 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 
 	// enemyRace == BWAPI::Races::Terran && 
 
-	if (frame_count > 10000 && sunkenWanted - numSunken > 0)
+	if (frame_count > 10000 && sunkenWanted - numSunken > 0) {
+		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Drone, 1));
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Sunken_Colony, 1));
+	}
 
 	if (frame_count > 15000 && frame_count % 100 == 0) {
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Mutalisk, 2));
@@ -677,6 +679,7 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 
 	// Check if we can add another hatchery
 	if (minerals > 1500 && MapTools::Instance().getNextExpansion() != BWAPI::TilePositions::None) {
+		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Drone, 1));
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hatchery, 1));
 		BWAPI::Broodwar->printf("Zerg Hatchery Ordered.");
 	}
