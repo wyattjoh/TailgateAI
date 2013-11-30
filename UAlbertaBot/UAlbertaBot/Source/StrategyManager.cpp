@@ -647,7 +647,10 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 	// the goal to return
 	std::vector< std::pair<MetaType, UnitCountType> > goal;
 
-	static long int last_frame_since_muta = BWAPI::Broodwar->getFrameCount();
+	long int frame_count = BWAPI::Broodwar->getFrameCount();
+
+	static long int last_frame_since_muta = frame_count;
+	static long int last_frame_since_last_hatchery = frame_count;
 	
 	int numLings =		BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Zerg_Zergling);
 	int numHydras =		BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Zerg_Hydralisk);
@@ -656,15 +659,19 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 	int numSunken =		BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Zerg_Sunken_Colony);
 
 	int minerals = BWAPI::Broodwar->self()->minerals();
-	long int frame_count = BWAPI::Broodwar->getFrameCount();
 
 	int hydrasWanted = 0;
 	int lingsWanted = 4;
 	int sunkenWanted = 4;
 
-	static const int dronesPERhatcheryWanted = 6;
+	static const int dronesPERhatcheryWanted = 7;
+	static const int hatcheryEveryNFrames = 5000;
 
-	int dronesPERhatchery = numDrones / numHatchery;
+	int dronesPERhatchery;
+	if (numHatchery > 0)
+		dronesPERhatchery = numDrones / numHatchery;
+	else
+		dronesPERhatchery = dronesPERhatcheryWanted;
 
 	if (frame_count > 7000)
 		hydrasWanted = 2;
@@ -692,12 +699,18 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 	if (frame_count > 5000 && dronesPERhatchery < dronesPERhatcheryWanted) {
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Drone, 2));
 		BWAPI::Broodwar->printf("Zerg Drone Ordered.");
+		BWAPI::Broodwar->printf("Zerg Drone Ordered.");
 	}
 
 	// Check if we can add another hatchery
-	if (frame_count > 10000 && minerals > 500) {
-		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hatchery, 1));
-		BWAPI::Broodwar->printf("Zerg Hatchery Ordered.");
+	if (frame_count > 12000 && frame_count - last_frame_since_last_hatchery > hatcheryEveryNFrames) {
+		if (MapTools::Instance().getNextExpansion() != BWAPI::TilePositions::None) {
+			goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hatchery, 1));
+			BWAPI::Broodwar->printf("Zerg Hatchery Ordered.");
+		}
+		else
+			BWAPI::Broodwar->printf("Zerg Hatchery Can't be built, no room!");
+		last_frame_since_last_hatchery = frame_count;
 	}
 	
 	return (const std::vector< std::pair<MetaType, UnitCountType> >)goal;
