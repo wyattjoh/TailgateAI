@@ -38,22 +38,25 @@ void ProductionManager::setBuildOrder(const std::vector<MetaType> & buildOrder)
 
 void ProductionManager::performBuildOrderSearch(const std::vector< std::pair<MetaType, UnitCountType> > & goal)
 {	
-	/*
-	if (selfRace == BWAPI::Races::Zerg) {
+	
+	if (BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Zerg) {
 		performZergBuildOrderSearch(goal);
 	}
 	else {
-	*/
+	
 		std::vector<MetaType> buildOrder = StarcraftBuildOrderSearchManager::Instance().findBuildOrder(goal);
 
 		// set the build order
 		setBuildOrder(buildOrder);
-	//}
+	}
 }
 
 void ProductionManager::performZergBuildOrderSearch(const std::vector< std::pair<MetaType, UnitCountType> > & goal)
 {
 	static ZergBuildOrderSearch zerg_build_order_search;
+
+	// clear the current build order
+	queue.clearAll();
 
 	BOOST_FOREACH (MetaPair order, goal) {
 
@@ -61,7 +64,25 @@ void ProductionManager::performZergBuildOrderSearch(const std::vector< std::pair
 
 			std::vector<MetaType> unit_dependancies = zerg_build_order_search.getDependancies(order.first.unitType);
 
+			BOOST_FOREACH (MetaType unit_dependancy, unit_dependancies) {
+				if (unit_dependancy.isUnit() || unit_dependancy.isBuilding()) {
+					if (BWAPI::Broodwar->self()->completedUnitCount(unit_dependancy.unitType) == 0 &&
+						!BuildingManager::Instance().isBeingBuilt(unit_dependancy.unitType)) {
+						queue.queueAsHighestPriority(unit_dependancy.unitType, true);
+					}
+				}
+			}
+
+			for (int i = 0; i < order.second; i++) {
+				queue.queueAsLowestPriority(order.first, true);
+			}
+
 		}
+		else {
+			BWAPI::Broodwar->printf("ZERGSEARCH: Non unit attempted to add: %s", order.first.getName().c_str());
+		}
+
+		
 	}
 }
 
@@ -80,14 +101,16 @@ void ProductionManager::update()
 	}
 
 	// detect if there's a build order deadlock once per second
-	if ((BWAPI::Broodwar->getFrameCount() % 24 == 0) && detectBuildOrderDeadlock())
+	if ((BWAPI::Broodwar->getFrameCount() % 48 == 0) && detectBuildOrderDeadlock() && BWAPI::Broodwar->getFrameCount() > 2500)
 	{
-		BWAPI::Broodwar->printf("Supply deadlock detected, building pylon!");
-		queue.queueAsHighestPriority(MetaType(BWAPI::Broodwar->self()->getRace().getSupplyProvider()), true);
+		if (BWAPI::Broodwar->self()->incompleteUnitCount(BWAPI::Broodwar->self()->getRace().getSupplyProvider()) == 0) {
+			BWAPI::Broodwar->printf("Supply deadlock detected, building pylon with frame: %d", BWAPI::Broodwar->getFrameCount());
+			queue.queueAsHighestPriority(MetaType(BWAPI::Broodwar->self()->getRace().getSupplyProvider()), true);
+		}
 	}
 
 	// if they have cloaked units get a new goal asap
-	if (!enemyCloakedDetected && InformationManager::Instance().enemyHasCloakedUnits())
+	if (!enemyCloakedDetected && InformationManager::Instance().enemyHasCloakedUnits() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Protoss)
 	{
 		if (BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Protoss_Photon_Cannon) < 2)
 		{
@@ -120,7 +143,7 @@ void ProductionManager::onUnitDestroy(BWAPI::Unit * unit)
 	// if it's a worker or a building, we need to re-search for the current goal
 	if ((unit->getType().isWorker() && !WorkerManager::Instance().isWorkerScout(unit)) || unit->getType().isBuilding())
 	{
-		BWAPI::Broodwar->printf("Critical unit died, re-searching build order");
+		BWAPI::Broodwar->printf("Critical unit died, re-searching build order: %s", unit->getType().getName().c_str());
 
 		if (unit->getType() != BWAPI::UnitTypes::Zerg_Drone)
 		{
@@ -543,12 +566,53 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	static const MetaType map_zerg_larva(BWAPI::UnitTypes::Zerg_Larva);
 	static const MetaType map_zerg_drone(BWAPI::UnitTypes::Zerg_Drone);
 	static const MetaType map_zerg_hatchery(BWAPI::UnitTypes::Zerg_Hatchery);
+	static const MetaType map_zerg_hydralisk(BWAPI::UnitTypes::Zerg_Hydralisk);
+	static const MetaType map_zerg_hydralisk_den(BWAPI::UnitTypes::Zerg_Hydralisk_Den);
+
+	static const MetaType map_zerg_mutalisk(BWAPI::UnitTypes::Zerg_Mutalisk);
+	static const MetaType map_zerg_spire(BWAPI::UnitTypes::Zerg_Spire);
+	static const MetaType map_zerg_lair(BWAPI::UnitTypes::Zerg_Lair);
+
+	// Mutalisk
+	ZergBuildOrder zerg_mutalisk(map_zerg_mutalisk);
+
+	zerg_mutalisk.dependencies.push_back(map_zerg_spire);
+
+	build_order.push_back(zerg_mutalisk);
+
+	// Spire
+	ZergBuildOrder zerg_spire(map_zerg_spire);
+
+	zerg_spire.dependencies.push_back(map_zerg_lair);
+
+	build_order.push_back(zerg_spire);
+
+	// Lair
+	ZergBuildOrder zerg_lair(map_zerg_lair);
+
+	zerg_lair.dependencies.push_back(map_zerg_hatchery);
+
+	build_order.push_back(zerg_lair);
+
+	// Hydralisk
+	ZergBuildOrder zerg_hydralisk(map_zerg_hydralisk);
+
+	zerg_hydralisk.dependencies.push_back(map_zerg_hydralisk_den);
+
+	build_order.push_back(zerg_hydralisk);
+
+	// Hydralisk Den
+	ZergBuildOrder zerg_hydralisk_den(map_zerg_hydralisk_den);
+
+	zerg_hydralisk_den.dependencies.push_back(map_zerg_spawning_pool);
+
+	build_order.push_back(zerg_hydralisk_den);
 
 	// Zergling
 	ZergBuildOrder zerg_zergling(map_zerg_zergling);
 
 	zerg_zergling.dependencies.push_back(map_zerg_spawning_pool);
-	zerg_zergling.dependencies.push_back(map_zerg_larva);
+	// zerg_zergling.dependencies.push_back(map_zerg_larva);
 
 	build_order.push_back(zerg_zergling);
 
@@ -562,7 +626,7 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	// Drone
 	ZergBuildOrder zerg_drone(map_zerg_drone);
 
-	zerg_drone.dependencies.push_back(map_zerg_larva);
+	// zerg_drone.dependencies.push_back(map_zerg_larva);
 	zerg_drone.dependencies.push_back(map_zerg_hatchery);
 
 	build_order.push_back(zerg_drone);
