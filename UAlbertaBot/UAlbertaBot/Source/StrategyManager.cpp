@@ -25,11 +25,15 @@ void StrategyManager::addStrategies()
 	terranOpeningBook  = std::vector<std::string>(NumTerranStrategies);
 	zergOpeningBook    = std::vector<std::string>(NumZergStrategies);
 
-	protossOpeningBook[ProtossZealotRush]	= "0 0 0 0 1 0 0 3 0 0 3 0 1 3 0 4 4 4 4 4 1 0 4 4 4";
-	protossOpeningBook[ProtossDarkTemplar]	= "0 0 0 0 1 3 0 7 5 0 0 12 3 13 0 22 22 0 0";
-	protossOpeningBook[ProtossDragoons]		= "0 0 0 0 1 0 0 3 0 7 0 0 5 0 0 3 8 6 1 6 6 0 3 1 0 6 6 6";
-	terranOpeningBook[TerranMarineRush]		= "0 0 0 0 0 1 0 0 3 0 0 3 0 1 0 4 0 0 0 6";
-	zergOpeningBook[ZergZerglingRush]		= "0 0 0 0 1 0 0 0 0 2 3 5 0 0 0 0 0 0 1";
+	protossOpeningBook[ProtossZealotRush]		= "0 0 0 0 1 0 0 3 0 0 3 0 1 3 0 4 4 4 4 4 1 0 4 4 4";
+	protossOpeningBook[ProtossDarkTemplar]		= "0 0 0 0 1 3 0 7 5 0 0 12 3 13 0 22 22 0 0";
+	protossOpeningBook[ProtossDragoons]			= "0 0 0 0 1 0 0 3 0 7 0 0 5 0 0 3 8 6 1 6 6 0 3 1 0 6 6 6";
+	terranOpeningBook[TerranMarineRush]			= "0 0 0 0 0 1 0 0 3 0 0 3 0 1 0 4 0 0 0 6";
+	zergOpeningBook[ZergNinePoolZerglingRush]	= "0 0 0 0 0 3 1 4 4 4 4 4 4 1 0 0 0 1 4 4 6";
+	zergOpeningBook[ZergFivePoolZerglingRush]	= "0 3 4 4 4 4 4 1 4 0 0 0 1 4 4 0 0 0 6";
+	zergOpeningBook[ZergFourPoolZerglingRush]	= "3 4 4 4 4 4 4 1 0 0 0 0 4 4 0 0 0 6";
+	zergOpeningBook[ZergStandardStrategy]		= "0 0 0 0 0 1 0 0 0 2 3 5 0 0 0 0 0 0 1 6";
+
 
 	if (selfRace == BWAPI::Races::Protoss)
 	{
@@ -67,7 +71,11 @@ void StrategyManager::addStrategies()
 	else if (selfRace == BWAPI::Races::Zerg)
 	{
 		results = std::vector<IntPair>(NumZergStrategies);
-		usableStrategies.push_back(ZergZerglingRush);
+
+		usableStrategies.push_back(ZergNinePoolZerglingRush);
+		usableStrategies.push_back(ZergFivePoolZerglingRush);
+		usableStrategies.push_back(ZergFourPoolZerglingRush);
+		usableStrategies.push_back(ZergStandardStrategy);
 	}
 
 	if (Options::Modules::USING_STRATEGY_IO)
@@ -178,8 +186,11 @@ void StrategyManager::setStrategy()
 	}
 	else
 	{
-		// otherwise return a random strategy
-		currentStrategy = ProtossZealotRush;
+		if (selfRace == BWAPI::Races::Zerg)
+			currentStrategy = ZergStandardStrategy;
+		else
+			// otherwise return a random strategy
+			currentStrategy = ProtossZealotRush;
 	}
 
 }
@@ -633,17 +644,25 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 	int numLings =		BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Zerg_Zergling);
 	int numHydras =		BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Zerg_Hydralisk);
 	int numDrones =		BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Zerg_Drone);
+	int numSunken =		BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Zerg_Sunken_Colony);
 
 	int minerals = BWAPI::Broodwar->self()->minerals();
 	long int frame_count = BWAPI::Broodwar->getFrameCount();
 
-	static int hydrasWanted = 2;
-	static int lingsWanted = 4;
+	int hydrasWanted = 0;
+	int lingsWanted = 4;
+	int sunkenWanted = 4;
+
+	if (frame_count > 7000)
+		hydrasWanted = 2;
 
 	goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Zergling, lingsWanted));
 	goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hydralisk, hydrasWanted));
 
 	// enemyRace == BWAPI::Races::Terran && 
+
+	if (frame_count > 10000 && sunkenWanted - numSunken > 0)
+		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Sunken_Colony, 1));
 
 	if (frame_count > 15000 && frame_count % 100 == 0) {
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Mutalisk, 2));
@@ -659,6 +678,7 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 	// Check if we can add another hatchery
 	if (minerals > 1500 && MapTools::Instance().getNextExpansion() != BWAPI::TilePositions::None) {
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hatchery, 1));
+		BWAPI::Broodwar->printf("Zerg Hatchery Ordered.");
 	}
 	
 	return (const std::vector< std::pair<MetaType, UnitCountType> >)goal;

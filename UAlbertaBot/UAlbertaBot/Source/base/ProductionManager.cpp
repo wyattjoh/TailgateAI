@@ -60,16 +60,24 @@ void ProductionManager::performZergBuildOrderSearch(const std::vector< std::pair
 
 	BOOST_FOREACH (MetaPair order, goal) {
 
-		if (order.first.isUnit()) {
+		if (order.first.isUnit() || order.first.isBuilding()) {
 
 			std::vector<MetaType> unit_dependancies = zerg_build_order_search.getDependancies(order.first.unitType);
+
+			BWAPI::Broodwar->printf("ZERGSEARCH: %s unit requested, takes %d dependencies.", order.first.getName().c_str(), unit_dependancies.size());
 
 			BOOST_FOREACH (MetaType unit_dependancy, unit_dependancies) {
 				if (unit_dependancy.isUnit() || unit_dependancy.isBuilding()) {
 					if (BWAPI::Broodwar->self()->completedUnitCount(unit_dependancy.unitType) == 0 &&
 						!BuildingManager::Instance().isBeingBuilt(unit_dependancy.unitType)) {
-						queue.queueAsHighestPriority(unit_dependancy.unitType, true);
+						queue.queueAsLowestPriority(unit_dependancy.unitType, true);
 					}
+					else {
+						BWAPI::Broodwar->printf("ZERGSEARCH: %s is either completed already or is already being built.", unit_dependancy.unitType.getName().c_str());
+					}
+				}
+				else {
+					BWAPI::Broodwar->printf("ZERGSEARCH: %s is not a unit or a building.", unit_dependancy.unitType.getName().c_str());
 				}
 			}
 
@@ -101,7 +109,7 @@ void ProductionManager::update()
 	}
 
 	// detect if there's a build order deadlock once per second
-	if ((BWAPI::Broodwar->getFrameCount() % 48 == 0) && detectBuildOrderDeadlock() && BWAPI::Broodwar->getFrameCount() > 2500)
+	if ((BWAPI::Broodwar->getFrameCount() % 24 == 0) && detectBuildOrderDeadlock() && BWAPI::Broodwar->getFrameCount() > 2500)
 	{
 		if (BWAPI::Broodwar->self()->incompleteUnitCount(BWAPI::Broodwar->self()->getRace().getSupplyProvider()) == 0) {
 			BWAPI::Broodwar->printf("Supply deadlock detected, building pylon with frame: %d", BWAPI::Broodwar->getFrameCount());
@@ -143,10 +151,9 @@ void ProductionManager::onUnitDestroy(BWAPI::Unit * unit)
 	// if it's a worker or a building, we need to re-search for the current goal
 	if ((unit->getType().isWorker() && !WorkerManager::Instance().isWorkerScout(unit)) || unit->getType().isBuilding())
 	{
-		BWAPI::Broodwar->printf("Critical unit died, re-searching build order: %s", unit->getType().getName().c_str());
-
 		if (unit->getType() != BWAPI::UnitTypes::Zerg_Drone)
 		{
+			BWAPI::Broodwar->printf("Critical unit died, re-searching build order: %s", unit->getType().getName().c_str());
 			performBuildOrderSearch(StrategyManager::Instance().getBuildOrderGoal());
 		}
 	}
@@ -573,42 +580,60 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	static const MetaType map_zerg_spire(BWAPI::UnitTypes::Zerg_Spire);
 	static const MetaType map_zerg_lair(BWAPI::UnitTypes::Zerg_Lair);
 
-	// Mutalisk
+	static const MetaType map_zerg_creep_colony(BWAPI::UnitTypes::Zerg_Creep_Colony);
+	static const MetaType map_zerg_sunken_colony(BWAPI::UnitTypes::Zerg_Sunken_Colony);
+
+	// Zerg Sunken Colony
+	ZergBuildOrder zerg_sunken_colony(map_zerg_sunken_colony);
+
+	zerg_sunken_colony.dependencies.push_back(map_zerg_creep_colony);
+
+	build_order.push_back(zerg_sunken_colony);
+
+	// Zerg Creep Colony
+	ZergBuildOrder zerg_creep_colony(map_zerg_creep_colony);
+
+	zerg_creep_colony.dependencies.push_back(map_zerg_drone);
+
+	build_order.push_back(zerg_creep_colony);
+
+	// Zerg Mutalisk
 	ZergBuildOrder zerg_mutalisk(map_zerg_mutalisk);
 
 	zerg_mutalisk.dependencies.push_back(map_zerg_spire);
 
 	build_order.push_back(zerg_mutalisk);
 
-	// Spire
+	// Zerg Spire
 	ZergBuildOrder zerg_spire(map_zerg_spire);
 
 	zerg_spire.dependencies.push_back(map_zerg_lair);
+	zerg_spire.dependencies.push_back(map_zerg_drone);
 
 	build_order.push_back(zerg_spire);
 
-	// Lair
+	// Zerg Lair
 	ZergBuildOrder zerg_lair(map_zerg_lair);
 
 	zerg_lair.dependencies.push_back(map_zerg_hatchery);
 
 	build_order.push_back(zerg_lair);
 
-	// Hydralisk
+	// Zerg Hydralisk
 	ZergBuildOrder zerg_hydralisk(map_zerg_hydralisk);
 
 	zerg_hydralisk.dependencies.push_back(map_zerg_hydralisk_den);
 
 	build_order.push_back(zerg_hydralisk);
 
-	// Hydralisk Den
+	// Zerg Hydralisk Den
 	ZergBuildOrder zerg_hydralisk_den(map_zerg_hydralisk_den);
 
 	zerg_hydralisk_den.dependencies.push_back(map_zerg_spawning_pool);
 
 	build_order.push_back(zerg_hydralisk_den);
 
-	// Zergling
+	// Zerg Zergling
 	ZergBuildOrder zerg_zergling(map_zerg_zergling);
 
 	zerg_zergling.dependencies.push_back(map_zerg_spawning_pool);
@@ -616,7 +641,7 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 
 	build_order.push_back(zerg_zergling);
 
-	// Spawning Pool
+	// Zerg Spawning Pool
 	ZergBuildOrder zerg_spawning_pool(map_zerg_spawning_pool);
 
 	zerg_spawning_pool.dependencies.push_back(map_zerg_drone);
