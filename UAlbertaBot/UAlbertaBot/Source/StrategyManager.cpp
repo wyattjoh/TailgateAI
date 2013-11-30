@@ -635,6 +635,7 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 	int numDrones =		BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Zerg_Drone);
 
 	int minerals = BWAPI::Broodwar->self()->minerals();
+	long int frame_count = BWAPI::Broodwar->getFrameCount();
 
 	static int hydrasWanted = 2;
 	static int lingsWanted = 4;
@@ -644,15 +645,15 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 
 	// enemyRace == BWAPI::Races::Terran && 
 
-	if (BWAPI::Broodwar->getFrameCount() > 10000) {
+	if (frame_count > 15000 && frame_count % 100 == 0) {
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Mutalisk, 2));
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hydralisk, 1));
 	}
 
-	if (minerals > 600 && BWAPI::Broodwar->getFrameCount() - last_frame_since_drone > 200) {
+	if (minerals > 600 && frame_count - last_frame_since_drone > 200) {
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Drone, 1));
 		BWAPI::Broodwar->printf("Zerg Drone Ordered.");
-		last_frame_since_drone = BWAPI::Broodwar->getFrameCount();
+		last_frame_since_drone = frame_count;
 	}
 
 	// Check if we can add another hatchery
