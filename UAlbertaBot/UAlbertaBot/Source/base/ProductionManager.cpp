@@ -68,11 +68,11 @@ void ProductionManager::performZergBuildOrderSearch(const std::vector< std::pair
 			if (unit_prebuildrequirements.size() > 0) {
 				BOOST_FOREACH (MetaType unit_prebuildrequirement, unit_prebuildrequirements) {
 					queue.queueAsLowestPriority(unit_prebuildrequirement, true);
-					BWAPI::Broodwar->printf("ZERGSEARCH: Building prebuildreq: %s unit for %s.", unit_prebuildrequirement.getName().c_str(), order.first.getName().c_str());
+					// BWAPI::Broodwar->printf("ZERGSEARCH: Building prebuildreq: %s unit for %s.", unit_prebuildrequirement.getName().c_str(), order.first.getName().c_str());
 				}
 			}
-			else
-				BWAPI::Broodwar->printf("ZERGSEARCH: No prebuildreq for %s.", order.first.getName().c_str());
+			// else
+			// 	BWAPI::Broodwar->printf("ZERGSEARCH: No prebuildreq for %s.", order.first.getName().c_str());
 			// BWAPI::Broodwar->printf("ZERGSEARCH: %s unit requested, takes %d dependencies.", order.first.getName().c_str(), unit_dependancies.size());
 
 			BOOST_FOREACH (MetaType unit_dependancy, unit_dependancies) {
@@ -585,6 +585,8 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	static const MetaType map_zerg_hydralisk(BWAPI::UnitTypes::Zerg_Hydralisk);
 	static const MetaType map_zerg_hydralisk_den(BWAPI::UnitTypes::Zerg_Hydralisk_Den);
 
+	static const MetaType map_zerg_extractor(BWAPI::UnitTypes::Zerg_Extractor);
+
 	static const MetaType map_zerg_mutalisk(BWAPI::UnitTypes::Zerg_Mutalisk);
 	static const MetaType map_zerg_spire(BWAPI::UnitTypes::Zerg_Spire);
 	static const MetaType map_zerg_lair(BWAPI::UnitTypes::Zerg_Lair);
@@ -610,14 +612,15 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	ZergBuildOrder zerg_mutalisk(map_zerg_mutalisk);
 
 	zerg_mutalisk.dependencies.push_back(map_zerg_spire);
+	zerg_mutalisk.dependencies.push_back(map_zerg_extractor);
 
 	build_order.push_back(zerg_mutalisk);
 
 	// Zerg Spire
 	ZergBuildOrder zerg_spire(map_zerg_spire);
 
-	zerg_spire.dependencies.push_back(map_zerg_lair);
 	zerg_spire.prebuildrequirements.push_back(map_zerg_drone);
+	zerg_spire.dependencies.push_back(map_zerg_lair);
 
 	build_order.push_back(zerg_spire);
 
@@ -625,6 +628,7 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	ZergBuildOrder zerg_lair(map_zerg_lair);
 
 	zerg_lair.dependencies.push_back(map_zerg_hatchery);
+	zerg_lair.dependencies.push_back(map_zerg_extractor);
 
 	build_order.push_back(zerg_lair);
 
@@ -638,8 +642,10 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	// Zerg Hydralisk Den
 	ZergBuildOrder zerg_hydralisk_den(map_zerg_hydralisk_den);
 
-	zerg_hydralisk_den.dependencies.push_back(map_zerg_spawning_pool);
 	zerg_hydralisk_den.prebuildrequirements.push_back(map_zerg_drone);
+	zerg_hydralisk_den.prebuildrequirements.push_back(map_zerg_drone);
+	zerg_hydralisk_den.dependencies.push_back(map_zerg_spawning_pool);
+	zerg_hydralisk_den.dependencies.push_back(map_zerg_extractor);
 
 	build_order.push_back(zerg_hydralisk_den);
 
@@ -654,6 +660,7 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	// Zerg Spawning Pool
 	ZergBuildOrder zerg_spawning_pool(map_zerg_spawning_pool);
 
+	zerg_spawning_pool.prebuildrequirements.push_back(map_zerg_drone);
 	zerg_spawning_pool.prebuildrequirements.push_back(map_zerg_drone);
 
 	build_order.push_back(zerg_spawning_pool);
@@ -700,7 +707,6 @@ std::vector<MetaType> ZergBuildOrderSearch::getPreBuildRequirements(const MetaTy
 	std::vector<MetaType> prebuildrequirements;
 
 	if (unit_order != build_order.end()) {
-		BWAPI::Broodwar->printf("ZERGSEARCH: <><> PREREQ INIT <><>");
 		BOOST_FOREACH(MetaType prebuildrequirement, unit_order->prebuildrequirements) {
 
 			std::vector<MetaType> prebuildrequirements_sub = getPreBuildRequirements(prebuildrequirement);

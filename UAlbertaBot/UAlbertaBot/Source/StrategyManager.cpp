@@ -29,9 +29,9 @@ void StrategyManager::addStrategies()
 	protossOpeningBook[ProtossDarkTemplar]		= "0 0 0 0 1 3 0 7 5 0 0 12 3 13 0 22 22 0 0";
 	protossOpeningBook[ProtossDragoons]			= "0 0 0 0 1 0 0 3 0 7 0 0 5 0 0 3 8 6 1 6 6 0 3 1 0 6 6 6";
 	terranOpeningBook[TerranMarineRush]			= "0 0 0 0 0 1 0 0 3 0 0 3 0 1 0 4 0 0 0 6";
-	zergOpeningBook[ZergNinePoolZerglingRush]	= "0 0 0 0 0 3 1 4 4 4 4 4 4 1 0 0 0 1 4 4 6";
-	zergOpeningBook[ZergFivePoolZerglingRush]	= "0 3 4 4 4 4 4 1 4 0 0 0 1 4 4 0 0 0 6";
-	zergOpeningBook[ZergFourPoolZerglingRush]	= "3 4 4 4 4 4 4 1 0 0 0 0 4 4 0 0 0 6";
+	zergOpeningBook[ZergNinePoolZerglingRush]	= "0 0 0 0 0 3 1 4 4 4 4 4 4 1 5 0 0 0 1 4 4 6";
+	zergOpeningBook[ZergFivePoolZerglingRush]	= "0 3 4 4 4 4 4 1 4 0 0 0 1 5 4 4 0 0 0 6";
+	zergOpeningBook[ZergFourPoolZerglingRush]	= "3 4 4 4 4 4 4 1 0 0 0 0 5 0 4 4 0 0 0 6";
 	zergOpeningBook[ZergStandardStrategy]		= "0 0 0 0 0 1 0 0 0 2 3 5 0 0 0 0 0 0 1 6";
 
 
@@ -186,9 +186,16 @@ void StrategyManager::setStrategy()
 	}
 	else
 	{
-		if (selfRace == BWAPI::Races::Zerg)
-			// currentStrategy = ZergFourPoolZerglingRush;
-			currentStrategy = ZergStandardStrategy;
+		if (selfRace == BWAPI::Races::Zerg) {
+			if (BWAPI::Broodwar->mapWidth() > 128 || BWAPI::Broodwar->mapHeight() > 128) {
+				currentStrategy = ZergStandardStrategy;
+				BWAPI::Broodwar->printf("STRATEGY MANAGER: Standard Strategy Selected.");
+			}
+			else if (BWAPI::Broodwar->mapWidth() <= 128 && BWAPI::Broodwar->mapHeight() <= 128) {
+				currentStrategy = ZergFourPoolZerglingRush;
+				BWAPI::Broodwar->printf("STRATEGY MANAGER: Four Pool Zergling Rush Selected.");
+			}
+		}
 		else
 			// otherwise return a random strategy
 			currentStrategy = ProtossZealotRush;
@@ -640,11 +647,12 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 	// the goal to return
 	std::vector< std::pair<MetaType, UnitCountType> > goal;
 
-	static long int last_frame_since_drone = BWAPI::Broodwar->getFrameCount();
+	static long int last_frame_since_muta = BWAPI::Broodwar->getFrameCount();
 	
 	int numLings =		BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Zerg_Zergling);
 	int numHydras =		BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Zerg_Hydralisk);
-	int numDrones =		BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Zerg_Drone);
+	int numDrones =		BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Zerg_Drone);
+	int numHatchery =	BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Zerg_Hatchery);
 	int numSunken =		BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Zerg_Sunken_Colony);
 
 	int minerals = BWAPI::Broodwar->self()->minerals();
@@ -654,27 +662,36 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 	int lingsWanted = 4;
 	int sunkenWanted = 4;
 
+	static const int dronesPERhatcheryWanted = 6;
+
+	int dronesPERhatchery = numDrones / numHatchery;
+
 	if (frame_count > 7000)
 		hydrasWanted = 2;
+
+	if (frame_count > 10000) {
+		lingsWanted = 2;
+		hydrasWanted = 8;
+	}
 
 	goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Zergling, lingsWanted));
 	goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hydralisk, hydrasWanted));
 
 	// enemyRace == BWAPI::Races::Terran && 
 
-	if (frame_count > 10000 && sunkenWanted - numSunken > 0) {
+	if (frame_count > 20000 && sunkenWanted - numSunken > 0 && minerals > 800) {
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Sunken_Colony, 1));
 	}
 
-	if (frame_count > 15000 && frame_count % 100 == 0) {
-		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Mutalisk, 2));
-		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hydralisk, 1));
+	if (frame_count > 15000 && frame_count - last_frame_since_muta > 500) {
+		BWAPI::Broodwar->printf("Zerg Mutalisk Ordered.");
+		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Mutalisk, 4));
+		last_frame_since_muta = frame_count;
 	}
 
-	if (minerals > 200 && frame_count - last_frame_since_drone > 200) {
-		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Drone, 1));
+	if (frame_count > 5000 && dronesPERhatchery < dronesPERhatcheryWanted) {
+		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Drone, 2));
 		BWAPI::Broodwar->printf("Zerg Drone Ordered.");
-		last_frame_since_drone = frame_count;
 	}
 
 	// Check if we can add another hatchery
