@@ -188,8 +188,8 @@ void StrategyManager::setStrategy()
 	{
 		if (selfRace == BWAPI::Races::Zerg) {
 			if (BWAPI::Broodwar->mapWidth() > 128 || BWAPI::Broodwar->mapHeight() > 128) {
-				currentStrategy = ZergStandardStrategy;
-				BWAPI::Broodwar->printf("STRATEGY MANAGER: Standard Strategy Selected.");
+				currentStrategy = ZergNinePoolZerglingRush;
+				BWAPI::Broodwar->printf("STRATEGY MANAGER: ZergNinePoolZerglingRush Selected.");
 			}
 			else if (BWAPI::Broodwar->mapWidth() <= 128 && BWAPI::Broodwar->mapHeight() <= 128) {
 				currentStrategy = ZergFourPoolZerglingRush;
@@ -668,19 +668,21 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 	static const int hatcheryEveryNFrames = 5000;
 
 	int dronesPERhatchery;
-	if (numHatchery > 0)
+	if (numHatchery > 0) {
 		dronesPERhatchery = numDrones / numHatchery;
+		BWAPI::Broodwar->printf("Currently have %d drones/hatch, want %d drones/hatch.", dronesPERhatchery, dronesPERhatcheryWanted);
+	}
 	else
 		dronesPERhatchery = dronesPERhatcheryWanted;
 
 	if (frame_count > 7000) {
 		hydrasWanted = 2;
 		//Upgrades hydralisks
-		//if(numHydras > 3)
-			//goal.push_back(MetaPair(BWAPI::UpgradeTypes::Grooved_Spines, 1));
+		if(numHydras > 3)
+			goal.push_back(MetaPair(BWAPI::UpgradeTypes::Grooved_Spines, 1));
 	}
 
-	if (frame_count > 10000) {
+	if (frame_count > 15000) {
 		lingsWanted = 2;
 		hydrasWanted = 8;
 	}

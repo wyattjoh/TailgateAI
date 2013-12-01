@@ -658,7 +658,7 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 
 	build_order.push_back(zerg_spawning_pool);
 
-	// Drone
+	// Zerg Drone
 	ZergBuildOrder zerg_drone(map_zerg_drone);
 
 	zerg_drone.dependencies.push_back(map_zerg_hatchery);
@@ -668,6 +668,13 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	/************
 	 * Upgrades *
 	 ************/
+
+	 // Grooved Spines
+	 ZergBuildOrder grooved_spines(map_grooved_spines);
+
+	 grooved_spines.dependencies.push_back(map_zerg_hydralisk_den);
+
+	 build_order.push_back(grooved_spines);
 
 
 }
