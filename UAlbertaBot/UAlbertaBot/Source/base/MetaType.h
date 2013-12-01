@@ -95,6 +95,8 @@ struct MetaType {
 			{
 				return commandType == rhs.commandType;
 			}
+			else
+				return false;
 		}
 		else
 			return false;
