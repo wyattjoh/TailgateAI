@@ -29,11 +29,10 @@ void StrategyManager::addStrategies()
 	protossOpeningBook[ProtossDarkTemplar]		= "0 0 0 0 1 3 0 7 5 0 0 12 3 13 0 22 22 0 0";
 	protossOpeningBook[ProtossDragoons]			= "0 0 0 0 1 0 0 3 0 7 0 0 5 0 0 3 8 6 1 6 6 0 3 1 0 6 6 6";
 	terranOpeningBook[TerranMarineRush]			= "0 0 0 0 0 1 0 0 3 0 0 3 0 1 0 4 0 0 0 6";
-	zergOpeningBook[ZergNinePoolZerglingRush]	= "0 0 0 0 0 3 1 4 4 4 4 4 4 1 5 0 0 0 1 4 4 6";
 	zergOpeningBook[ZergFivePoolZerglingRush]	= "0 3 4 4 4 4 4 1 4 0 0 0 1 5 4 4 0 0 6";
 	zergOpeningBook[ZergFourPoolZerglingRush]	= "3 4 4 4 4 4 4 1 4 0 0 0 1 5 4 4 0 0 6";
 	zergOpeningBook[ZergStandardStrategy]		= "0 0 0 0 0 1 0 0 0 2 3 5 0 0 0 0 0 0 1 6";
-
+	zergOpeningBook[ZergNinePoolZerglingRush]	= "0 0 0 0 0 3 1 4 4 4 4 4 4 2 4 4 0 0 0 0 0 5 0 0 0";
 
 	if (selfRace == BWAPI::Races::Protoss)
 	{
@@ -187,13 +186,19 @@ void StrategyManager::setStrategy()
 	else
 	{
 		if (selfRace == BWAPI::Races::Zerg) {
-			if (BWAPI::Broodwar->mapWidth() > 128 || BWAPI::Broodwar->mapHeight() > 128) {
+			if (BWAPI::Broodwar->mapWidth() >= 128 && BWAPI::Broodwar->mapHeight() >= 128) {
 				currentStrategy = ZergNinePoolZerglingRush;
 				BWAPI::Broodwar->printf("STRATEGY MANAGER: ZergNinePoolZerglingRush Selected.");
 			}
-			else if (BWAPI::Broodwar->mapWidth() <= 128 && BWAPI::Broodwar->mapHeight() <= 128) {
+			else if (enemyRace == BWAPI::Races::Protoss) {
+				if (BWAPI::Broodwar->mapWidth() <= 96 && BWAPI::Broodwar->mapHeight() <= 96) {
+					currentStrategy = ZergFivePoolZerglingRush;
+					BWAPI::Broodwar->printf("STRATEGY MANAGER: ZergFivePoolZerglingRush Selected.");
+				}
+			}
+			else {
 				currentStrategy = ZergFourPoolZerglingRush;
-				BWAPI::Broodwar->printf("STRATEGY MANAGER: Four Pool Zergling Rush Selected.");
+				BWAPI::Broodwar->printf("STRATEGY MANAGER: ZergFourPoolZerglingRush Selected.");
 			}
 		}
 		else
@@ -644,44 +649,53 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal() const
 
 const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 {
+	// Define unchanging consts for this strategy
+	static const int dronesPERhatcheryWanted = 8;
+	static const int hatcheryEveryNFrames = 5000;
+
 	// the goal to return
 	std::vector< std::pair<MetaType, UnitCountType> > goal;
 
+	// Get the current frame count
 	long int frame_count = BWAPI::Broodwar->getFrameCount();
 
+	// Setup the counters
 	static long int last_frame_since_muta = frame_count;
 	static long int last_frame_since_last_hatchery = frame_count;
 	
+	// Count our current unit set
 	int numLings =		BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Zerg_Zergling);
 	int numHydras =		BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Zerg_Hydralisk);
 	int numDrones =		BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Zerg_Drone);
 	int numHatchery =	BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Zerg_Hatchery);
 	int numSunken =		BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Zerg_Sunken_Colony);
 
+	// Get our current avaiable minerals
 	int minerals = BWAPI::Broodwar->self()->minerals();
 
+	// Setup the amount of units needed
 	int hydrasWanted = 0;
 	int lingsWanted = 4;
 	int sunkenWanted = 4;
 
-	static const int dronesPERhatcheryWanted = 7;
-	static const int hatcheryEveryNFrames = 5000;
-
+	// Check if we need drones
 	int dronesPERhatchery;
-	if (numHatchery > 0) {
+	if (numHatchery > 0)
 		dronesPERhatchery = numDrones / numHatchery;
-		BWAPI::Broodwar->printf("Currently have %d drones/hatch, want %d drones/hatch.", dronesPERhatchery, dronesPERhatcheryWanted);
-	}
 	else
 		dronesPERhatchery = dronesPERhatcheryWanted;
 
-	if (frame_count > 7000) {
+	// Trigger some fancy hydras for later game
+	if (frame_count > 8000) {
 		hydrasWanted = 2;
+
 		//Upgrades hydralisks
-		if(numHydras > 3)
-			goal.push_back(MetaPair(BWAPI::UpgradeTypes::Grooved_Spines, 1));
+		// DOES NOT WORK, BUILD SYSTEM HANGS ON THIS CALL
+		// if(numHydras >= 5)
+		// 	goal.push_back(MetaPair(BWAPI::UpgradeTypes::Grooved_Spines, 1));
 	}
 
+	// Turn up the hydras late game
 	if (frame_count > 15000) {
 		lingsWanted = 2;
 		hydrasWanted = 8;
@@ -690,32 +704,34 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 	goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Zergling, lingsWanted));
 	goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hydralisk, hydrasWanted));
 
-	// enemyRace == BWAPI::Races::Terran && 
-
+	// Activeate Sunken Colony's late game
 	if (frame_count > 20000 && sunkenWanted - numSunken > 0 && minerals > 800) {
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Sunken_Colony, 1));
 	}
 
+	// Setup mutas late game
 	if (frame_count > 15000 && frame_count - last_frame_since_muta > 500) {
 		BWAPI::Broodwar->printf("Zerg Mutalisk Ordered.");
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Mutalisk, 4));
 		last_frame_since_muta = frame_count;
 	}
 
+	// Build drones if needed
 	if (frame_count > 3000 && dronesPERhatchery < dronesPERhatcheryWanted) {
-		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Drone, 2));
-		BWAPI::Broodwar->printf("Zerg Drone Ordered.");
-		BWAPI::Broodwar->printf("Zerg Drone Ordered.");
+		int build_n_drones = (numHatchery * dronesPERhatcheryWanted - numDrones)/4 + 1;
+
+		BWAPI::Broodwar->printf("Currently have %d drones/hatch, want %d drones/hatch.", dronesPERhatchery, dronesPERhatcheryWanted);
+
+		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Drone, build_n_drones));
+		BWAPI::Broodwar->printf("%d Zerg Drone's Ordered.", build_n_drones);
 	}
 
 	// Check if we can add another hatchery
-	if (frame_count > 12000 && frame_count - last_frame_since_last_hatchery > hatcheryEveryNFrames) {
+	if (frame_count > 10000 && frame_count - last_frame_since_last_hatchery > hatcheryEveryNFrames) {
 		if (MapTools::Instance().getNextExpansion() != BWAPI::TilePositions::None) {
 			goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hatchery, 1));
 			BWAPI::Broodwar->printf("Zerg Hatchery Ordered.");
 		}
-		else
-			BWAPI::Broodwar->printf("Zerg Hatchery Can't be built, no room!");
 		last_frame_since_last_hatchery = frame_count;
 	}
 	

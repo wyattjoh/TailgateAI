@@ -60,10 +60,10 @@ void ProductionManager::performZergBuildOrderSearch(const std::vector< std::pair
 
 	if (goal.size() > 0) {
 		BOOST_FOREACH (MetaPair order, goal) {
-			if (order.first.isUnit() || order.first.isBuilding()) {
+			if (order.first.isUnit() || order.first.isBuilding() || order.first.isUpgrade()) {
 				// Get the dependdancies and prebuild requirements
-				std::vector<MetaType> unit_dependancies = zerg_build_order_search.getDependancies(order.first.unitType);
-				std::vector<MetaType> unit_prebuildrequirements = zerg_build_order_search.getPreBuildRequirements(order.first.unitType);
+				std::vector<MetaType> unit_dependancies = zerg_build_order_search.getDependancies(order.first);
+				std::vector<MetaType> unit_prebuildrequirements = zerg_build_order_search.getPreBuildRequirements(order.first);
 
 				// Build prerequisites
 				if (unit_prebuildrequirements.size() > 0)
@@ -77,7 +77,13 @@ void ProductionManager::performZergBuildOrderSearch(const std::vector< std::pair
 						if (unit_dependancy.isUnit() || unit_dependancy.isBuilding()) {
 							if (BWAPI::Broodwar->self()->completedUnitCount(unit_dependancy.unitType) == 0 &&
 								!BuildingManager::Instance().isBeingBuilt(unit_dependancy.unitType)) {
-								queue.queueAsLowestPriority(unit_dependancy.unitType, true);
+								queue.queueAsLowestPriority(unit_dependancy, true);
+							}
+						}
+						else if (unit_dependancy.isTech()) {
+							if (!BWAPI::Broodwar->self()->hasResearched(unit_dependancy.techType) &&
+								!BWAPI::Broodwar->self()->isResearching(unit_dependancy.techType)) {
+								queue.queueAsLowestPriority(unit_dependancy, true);
 							}
 						}
 					}
@@ -673,6 +679,7 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	 ZergBuildOrder grooved_spines(map_grooved_spines);
 
 	 grooved_spines.dependencies.push_back(map_zerg_hydralisk_den);
+	 grooved_spines.prebuildrequirements.push_back(map_zerg_drone);
 
 	 build_order.push_back(grooved_spines);
 
