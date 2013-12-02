@@ -191,9 +191,13 @@ void StrategyManager::setStrategy()
 				BWAPI::Broodwar->printf("STRATEGY MANAGER: ZergNinePoolZerglingRush Selected.");
 			}
 			else if (enemyRace == BWAPI::Races::Protoss) {
-				if (BWAPI::Broodwar->mapWidth() <= 96 && BWAPI::Broodwar->mapHeight() <= 96) {
+				if (BWAPI::Broodwar->mapWidth() <= 128 && BWAPI::Broodwar->mapHeight() <= 128) {
 					currentStrategy = ZergFivePoolZerglingRush;
 					BWAPI::Broodwar->printf("STRATEGY MANAGER: ZergFivePoolZerglingRush Selected.");
+				}
+				else {
+					currentStrategy = ZergNinePoolZerglingRush;
+					BWAPI::Broodwar->printf("STRATEGY MANAGER: ZergNinePoolZerglingRush Selected.");
 				}
 			}
 			else {
