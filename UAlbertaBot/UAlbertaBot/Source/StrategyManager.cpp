@@ -31,7 +31,6 @@ void StrategyManager::addStrategies()
 	terranOpeningBook[TerranMarineRush]			= "0 0 0 0 0 1 0 0 3 0 0 3 0 1 0 4 0 0 0 6";
 	zergOpeningBook[ZergFivePoolZerglingRush]	= "0 3 4 4 4 4 4 1 4 0 0 0 1 5 4 4 0 0 6";
 	zergOpeningBook[ZergFourPoolZerglingRush]	= "3 4 4 4 4 4 4 1 4 0 0 0 1 5 4 4 0 0 6 0 0 0 0";
-	zergOpeningBook[ZergStandardStrategy]		= "0 0 0 0 0 1 0 0 0 2 3 5 0 0 0 0 0 0 1 6";
 	zergOpeningBook[ZergNinePoolZerglingRush]	= "0 0 0 0 0 3 1 4 4 4 4 4 4 2 4 4 0 0 0 0 0 5 0 0 0";
 
 	if (selfRace == BWAPI::Races::Protoss)
@@ -74,7 +73,6 @@ void StrategyManager::addStrategies()
 		usableStrategies.push_back(ZergNinePoolZerglingRush);
 		usableStrategies.push_back(ZergFivePoolZerglingRush);
 		usableStrategies.push_back(ZergFourPoolZerglingRush);
-		usableStrategies.push_back(ZergStandardStrategy);
 	}
 
 	if (Options::Modules::USING_STRATEGY_IO)
@@ -655,7 +653,11 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 {
 	// Define unchanging consts for this strategy
 	static const int dronesPERhatcheryWanted = 8;
-	static const int hatcheryEveryNFrames = 5000;
+	static const int hatcheryEveryNFrames = 7000;
+
+	// Timings
+	static const int upgrade_Metabolic_Boost_after = 5000;
+	static const int upgrade_Grooved_Spines_after = 9000;
 
 	// the goal to return
 	std::vector< std::pair<MetaType, UnitCountType> > goal;
@@ -679,8 +681,9 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 
 	// Setup the amount of units needed
 	int hydrasWanted = 0;
-	int lingsWanted = 4;
-	int sunkenWanted = 4;
+	int lingsWanted =  2;
+	int sunkenWanted = 2;
+	int mutasWanted =  0;
 
 	// Check if we need drones
 	int dronesPERhatchery;
@@ -690,33 +693,41 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 		dronesPERhatchery = dronesPERhatcheryWanted;
 
 	// Trigger some fancy hydras for later game
-	if (frame_count > 8000) {
-		hydrasWanted = 2;
+	if (upgrade_Grooved_Spines_after > 9000) {
+		hydrasWanted = 1;
 
 		//Upgrades hydralisks
-		// DOES NOT WORK, BUILD SYSTEM HANGS ON THIS CALL
-		// if(numHydras >= 5)
-		// 	goal.push_back(MetaPair(BWAPI::UpgradeTypes::Grooved_Spines, 1));
+		if (numHydras >= 1)
+			goal.push_back(MetaPair(BWAPI::UpgradeTypes::Grooved_Spines, 1));
+
+		if (numHydras >= 3)
+			goal.push_back(MetaPair(BWAPI::UpgradeTypes::Muscular_Augments, 1));
 	}
 
-	// Turn up the hydras late game
-	if (frame_count > 15000) {
-		lingsWanted = 2;
-		hydrasWanted = 8;
+	if (frame_count > upgrade_Metabolic_Boost_after && numLings >= 3)
+		goal.push_back(MetaPair(BWAPI::UpgradeTypes::Metabolic_Boost, 1));
+
+	if (frame_count > 10000) {
+		mutasWanted = 2;
+
+		// Turn up the hydras late game
+		if (frame_count > 15000) {
+			lingsWanted =  1;
+			hydrasWanted = 3;
+		}
 	}
 
-	goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Zergling, lingsWanted));
-	goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hydralisk, hydrasWanted));
+	goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Zergling, lingsWanted * numHatchery));
+	goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hydralisk, hydrasWanted * numHatchery));
 
 	// Activeate Sunken Colony's late game
-	if (frame_count > 20000 && sunkenWanted - numSunken > 0 && minerals > 800) {
+	if (frame_count > 10000 && sunkenWanted - numSunken > 0 && minerals > 800)
 		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Sunken_Colony, 1));
-	}
 
 	// Setup mutas late game
 	if (frame_count > 15000 && frame_count - last_frame_since_muta > 500) {
 		BWAPI::Broodwar->printf("Zerg Mutalisk Ordered.");
-		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Mutalisk, 4));
+		goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Mutalisk, mutasWanted * numHatchery));
 		last_frame_since_muta = frame_count;
 	}
 
@@ -732,9 +743,10 @@ const MetaPairVector StrategyManager::getZergBuildOrderGoal() const
 
 	// Check if we can add another hatchery
 	if (frame_count > 10000 && frame_count - last_frame_since_last_hatchery > hatcheryEveryNFrames) {
-		if (MapTools::Instance().getNextExpansion() != BWAPI::TilePositions::None) {
-			goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hatchery, 1));
+		if (MapTools::Instance().getNextExpansion() != BWAPI::TilePositions::None && 
+			!BuildingManager::Instance().isBeingBuilt(BWAPI::UnitTypes::Zerg_Hatchery)) {
 			BWAPI::Broodwar->printf("Zerg Hatchery Ordered.");
+			goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Zerg_Hatchery, 1));
 		}
 		last_frame_since_last_hatchery = frame_count;
 	}
