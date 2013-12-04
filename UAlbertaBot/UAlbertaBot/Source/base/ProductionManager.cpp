@@ -611,6 +611,7 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	static const MetaType map_grooved_spines(BWAPI::UpgradeTypes::Grooved_Spines);
 	static const MetaType map_zerg_missile_attacks(BWAPI::UpgradeTypes::Zerg_Missile_Attacks);
 	static const MetaType map_muscular_augments(BWAPI::UpgradeTypes::Muscular_Augments);
+	static const MetaType map_metabolic_boost(BWAPI::UpgradeTypes::Metabolic_Boost);
 
 	/*************
 	 *** Units ***
@@ -699,10 +700,22 @@ ZergBuildOrderSearch::ZergBuildOrderSearch()
 	 ZergBuildOrder grooved_spines(map_grooved_spines);
 
 	 grooved_spines.dependencies.push_back(map_zerg_hydralisk_den);
-	 grooved_spines.prebuildrequirements.push_back(map_zerg_drone);
 
 	 build_order.push_back(grooved_spines);
 
+	 // Metabolic Boost
+	 ZergBuildOrder metabolic_boost(map_metabolic_boost);
+
+	 metabolic_boost.dependencies.push_back(map_zerg_spawning_pool);
+
+	 build_order.push_back(metabolic_boost);
+
+	 // Muscular Augments
+	 ZergBuildOrder muscular_augments(map_muscular_augments);
+
+	 muscular_augments.dependencies.push_back(map_zerg_hydralisk_den);
+
+	 build_order.push_back(muscular_augments);
 
 }
 
