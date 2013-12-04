@@ -61,6 +61,20 @@ void ProductionManager::performZergBuildOrderSearch(const std::vector< std::pair
 	if (goal.size() > 0) {
 		BOOST_FOREACH (MetaPair order, goal) {
 			if (order.first.isUnit() || order.first.isBuilding() || order.first.isUpgrade()) {
+
+				if (order.first.isTech()) {
+					if (BWAPI::Broodwar->self()->hasResearched(order.first.techType) ||
+						BWAPI::Broodwar->self()->isResearching(order.first.techType)) {
+						continue;
+					}
+				}
+				else if (order.first.isUpgrade()) {
+					if (BWAPI::Broodwar->self()->isUpgrading(order.first.upgradeType) ||
+						BWAPI::Broodwar->self()->getUpgradeLevel(order.first.upgradeType) > 0) {
+						continue;
+					}
+				}
+
 				// Get the dependdancies and prebuild requirements
 				std::vector<MetaType> unit_dependancies = zerg_build_order_search.getDependancies(order.first);
 				std::vector<MetaType> unit_prebuildrequirements = zerg_build_order_search.getPreBuildRequirements(order.first);
@@ -83,6 +97,12 @@ void ProductionManager::performZergBuildOrderSearch(const std::vector< std::pair
 						else if (unit_dependancy.isTech()) {
 							if (!BWAPI::Broodwar->self()->hasResearched(unit_dependancy.techType) &&
 								!BWAPI::Broodwar->self()->isResearching(unit_dependancy.techType)) {
+								queue.queueAsLowestPriority(unit_dependancy, true);
+							}
+						}
+						else if (unit_dependancy.isUpgrade()) {
+							if (!BWAPI::Broodwar->self()->isUpgrading(unit_dependancy.upgradeType) &&
+								BWAPI::Broodwar->self()->getUpgradeLevel(unit_dependancy.upgradeType) <= 0) {
 								queue.queueAsLowestPriority(unit_dependancy, true);
 							}
 						}
