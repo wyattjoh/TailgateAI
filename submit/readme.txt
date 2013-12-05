@@ -26,5 +26,4 @@ ProductionManager.h
 	under private data memebers
 
 MetaType.h
-	-in struct MetaData added else{return false;}
 	- added bool == operator
