@@ -27,6 +27,9 @@ all: $(JOBNAME).pdf
 # -interactive=nonstopmode keeps the pdflatex backend from stopping at a
 # missing file reference and interactively asking you for an alternative.
 
+preview: all
+	open $(JOBNAME).pdf
+
 $(JOBNAME).pdf: $(JOBNAME).tex $(JOBNAME)-bibliography.bib
 	latexmk -pdf -bibtex -pdflatex="pdflatex" -use-make $(JOBNAME).tex
 
