@@ -15,3 +15,5 @@ UAlbertaBot/UAlbertaBot/VisualStudio/UAlbertaBot.opensdf
 *.out
 *.pdf
 .DS_Store
+latex/cmput350-paper.bcf
+latex/cmput350-paper.run.xml
