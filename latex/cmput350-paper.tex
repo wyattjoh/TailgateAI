@@ -117,14 +117,16 @@ Based on the results obtained from testing yielded the results as seen in \autor
     \label{fig:results_by_map}
 \end{figure}
 
+We also noted that our bot faired much better on the smaller maps from \autoref{fig:results_by_map}. This is simply a result of using the 4 Pool rush, as it depends on a small map size to get the enemy base before they have any defenses up to protect themselves.
+
 The statistics generated using the tournament software \cite{tournament_software} (as seen in \autoref{fig:results_by_bot} and \autoref{fig:results_by_map}) were ran on an earlier revision of the code base, but shared enough of the base characteristics to still be relevant to the current revision. Most of the games won through the tournament software were done as an early game rush. Specifically, the 4 Pool rush still seems to surprise most of the enemy AI's in these tests we ran. After the tournament software was run, we did develop some more solid late game code, but as most matches were very short with ours anyways, we feel that it shouldn't sway results too much.
 \section{Motivations for Our Work}
 
-We saw that the initial AI had trouble expanding and gaining control over the map. When the original bot attempted to expand it would build its expansion next to the opponent's base, thereby allowing the opponent to destroy it early on in the game. We thought that expanding properly would allow us to better the AI significantly.
+We saw that the initial AI had trouble expanding and gaining control over the map. When the original bot attempted to expand it would build its expansion next to the opponent's base, thereby allowing the opponent to destroy it early on in the game. We thought that expanding properly would allow us to better the AI significantly. Also noting that the original AI seemed susceptible to an early worker rush yielded the possibility of the 4 Pool rush working effectively.
 
 The strategy implemented by the original AI was purely to spawn an initial amount of Zerglings to rush the opponent and stop production entirely. Seeing this we thought that we could make the AI more successful by controlling when it should be spawning Zerglings and other units. 
 
-Our goal was to eliminate the problems Zerg had in its original implementation, and introduce a basic strategy.  
+Our goal was to eliminate the problems Zerg had in its original implementation, and introduce a basic strategy. 
 
 \section{Strategies Implemented}
 
